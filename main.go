@@ -19,9 +19,10 @@ var (
 
 	baseURL = flag.String("url", "https://api.cloudflare.com/client/v4/logs", "URL for CloudFlare logs API")
 
-	start = flag.Int64("start", -1, "the unix epoch timestamp to start downloading from")
-	end   = flag.Int64("end", time.Now().Unix(), "the unix epoch timestamp to end downloading at")
-	dir   = flag.String("dir", os.TempDir(), "directory to download logs in")
+	start   = flag.Int64("start", -1, "the unix epoch timestamp to start downloading from")
+	maxPast = flag.Duration("max", 72*time.Hour, "the maximum time in the past the start can be")
+	end     = flag.Int64("end", time.Now().Unix(), "the unix epoch timestamp to end downloading at")
+	dir     = flag.String("dir", os.TempDir(), "directory to download logs in")
 )
 
 const (
@@ -135,6 +136,9 @@ func validateFlags() {
 			log.Fatalf("Corrupt checkpoint file (%s)", fp)
 		}
 		*start = s
+	}
+	if time.Since(time.Unix(*start, 0)) > *maxPast {
+		log.Fatalf("Start is more than %v old", maxPast)
 	}
 	if *end < 0 {
 		log.Fatalf("The provided end (%d) is < 0", *end)
