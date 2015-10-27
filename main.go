@@ -32,7 +32,7 @@ const (
 
 func main() {
 	validateFlags()
-	log.Printf("Downloading to %d", *dir)
+	log.Printf("Downloading to %s", *dir)
 	downloadLogs()
 	saveCheckpoint()
 }
