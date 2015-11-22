@@ -35,6 +35,7 @@ func main() {
 	validateFlags()
 	log.Printf("Downloading to %s", *dir)
 	downloadLogs()
+	saveCheckpoint()
 }
 
 // downloadLogs connects to log downloading service and saves
@@ -94,8 +95,6 @@ func saveLogs(s, e time.Time) {
 	defer f.Close()
 
 	io.Copy(f, resp.Body)
-    // saves the checkpoint file after the file is successfully downloaded
-	saveCheckpoint()
 }
 
 // saveCheckpoint saves the last downloaded state in a file
