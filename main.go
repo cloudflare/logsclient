@@ -58,6 +58,8 @@ func downloadLogs() {
 			e = endT
 		}
 		saveLogs(s, e)
+		// saves the checkpoint file after the file is successfully downloaded
+		saveCheckpoint(e)
 		s = s.Add(fileInterval)
 	}
 }
@@ -100,7 +102,7 @@ func saveLogs(s, e time.Time) {
 
 // saveCheckpoint saves the last downloaded state in a file
 // to resume download from.
-func saveCheckpoint() {
+func saveCheckpoint(t time.Time) {
 	fp := filepath.Join(*dir, checkpointFile)
 	os.Remove(fp)
 	f, err := os.Create(fp)
@@ -108,7 +110,7 @@ func saveCheckpoint() {
 		log.Fatalf("Failed to create checkpoint file (%s): %v", fp, err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(strconv.FormatInt(*end, 10)); err != nil {
+	if _, err := f.WriteString(strconv.FormatInt(t.Unix(), 10)); err != nil {
 		log.Fatalf("Failed to write to checkpoint file (%s): %v", fp, err)
 	}
 }
