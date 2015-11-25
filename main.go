@@ -14,20 +14,18 @@ import (
 )
 
 var (
-	email = flag.String("auth.email", "", "authorization email")
-	key   = flag.String("auth.key", "", "authorization key")
-
-	baseURL = flag.String("url", "https://api.cloudflare.com/client/v4/logs", "URL for CloudFlare logs API")
-
-	start   = flag.Int64("start", -1, "the unix epoch timestamp to start downloading from")
-	maxPast = flag.Duration("max", 72*time.Hour, "the maximum time in the past the start can be")
-	end     = flag.Int64("end", time.Now().Unix(), "the unix epoch timestamp to end downloading at")
-	dir     = flag.String("dir", os.TempDir(), "directory to download logs in")
+	email        = flag.String("auth.email", "", "authorization email")
+	key          = flag.String("auth.key", "", "authorization key")
+	baseURL      = flag.String("url", "https://api.cloudflare.com/client/v4/logs", "URL for CloudFlare logs API")
+	start        = flag.Int64("start", -1, "the unix epoch timestamp to start downloading from")
+	maxPast      = flag.Duration("max", 72*time.Hour, "the maximum time in the past the start can be")
+	end          = flag.Int64("end", time.Now().Unix(), "the unix epoch timestamp to end downloading at")
+	fileInterval = flag.Duration("interval", 1*time.Minute, "the time interval to save files in")
+	dir          = flag.String("dir", os.TempDir(), "directory to download logs in")
 )
 
 const (
 	fileTimeLayout = "logs-2006_01_02-15_04_05.log.gz"
-	fileInterval   = time.Minute
 	checkpointFile = "checkpoint"
 )
 
@@ -45,22 +43,23 @@ func downloadLogs() {
 		startT = time.Unix(*start, 0).UTC()
 		endT   = time.Unix(*end, 0).UTC()
 
-		// Interval to download for current file.
-		s = startT
+		// Interval to download for current file. Rounds down to the closest minute
+		// to ensure that you do not get files that cross intervals
+		s = startT.Truncate(time.Minute)
 		e time.Time
 	)
 	for {
 		if !s.Before(endT) {
 			return
 		}
-		e = s.Add(fileInterval)
+		e = s.Add(*fileInterval)
 		if e.After(endT) {
 			e = endT
 		}
 		saveLogs(s, e)
 		// saves the checkpoint file after the file is successfully downloaded
 		saveCheckpoint(e)
-		s = s.Add(fileInterval)
+		s = s.Add(*fileInterval)
 	}
 }
 
