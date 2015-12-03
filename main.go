@@ -96,7 +96,7 @@ func saveLogs(s, e time.Time) {
 
 	io.Copy(f, resp.Body)
     // saves the checkpoint file after the file is successfully downloaded
-	saveCheckpoint()
+	saveCheckpoint(e)
 }
 
 // saveCheckpoint saves the last downloaded state in a file
