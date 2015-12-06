@@ -14,14 +14,14 @@ import (
 )
 
 var (
-	email        = flag.String("auth.email", "", "authorization email")
-	key          = flag.String("auth.key", "", "authorization key")
-	baseURL      = flag.String("url", "https://api.cloudflare.com/client/v4/logs", "URL for CloudFlare logs API")
-	start        = flag.Int64("start", -1, "the unix epoch timestamp to start downloading from")
-	maxPast      = flag.Duration("max", 72*time.Hour, "the maximum time in the past the start can be")
-	end          = flag.Int64("end", time.Now().Unix(), "the unix epoch timestamp to end downloading at")
-	fileInterval = flag.Duration("interval", 1*time.Minute, "the time interval to save files in")
-	dir          = flag.String("dir", os.TempDir(), "directory to download logs in")
+	email    = flag.String("auth.email", "", "authorization email")
+	key      = flag.String("auth.key", "", "authorization key")
+	baseURL  = flag.String("url", "", "URL for CloudFlare logs API - https://api.cloudflare.com/client/v4/zones/<zone tag>/logs/requests")
+	start    = flag.Int64("start", -1, "the unix epoch timestamp to start downloading from")
+	maxPast  = flag.Duration("max", 72*time.Hour, "the maximum time in the past the start can be")
+	end      = flag.Int64("end", time.Now().Unix(), "the unix epoch timestamp to end downloading at")
+	interval = flag.Duration("interval", 1*time.Minute, "the time interval to save files in")
+	dir      = flag.String("dir", os.TempDir(), "directory to download logs in")
 )
 
 const (
@@ -52,14 +52,14 @@ func downloadLogs() {
 		if !s.Before(endT) {
 			return
 		}
-		e = s.Add(*fileInterval)
+		e = s.Add(*interval)
 		if e.After(endT) {
 			e = endT
 		}
 		saveLogs(s, e)
 		// saves the checkpoint file after the file is successfully downloaded
 		saveCheckpoint(e)
-		s = s.Add(*fileInterval)
+		s = s.Add(*interval)
 	}
 }
 
@@ -148,5 +148,11 @@ func validateFlags() {
 	}
 	if _, err := os.Stat(*dir); os.IsNotExist(err) {
 		log.Fatalf("The provided dir (%s) does not exist", *dir)
+	}
+	if *interval < time.Duration(1*time.Second) {
+		log.Fatalf("The interval of time is less than one second")
+	}
+	if *interval > time.Duration(24*time.Hour) {
+		log.Fatalf("The interval of time is greater than twenty-four hours")
 	}
 }
