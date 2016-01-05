@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -28,6 +29,12 @@ const (
 	fileTimeLayout = "logs-2006_01_02-15_04_05.log.gz"
 	checkpointFile = "checkpoint"
 )
+
+type metadata struct {
+	TimeRange   string              `json:"timeRange"`
+	DownloadURL string              `json:"downloadURL"`
+	Headers     map[string][]string `json:"responseHeaders"`
+}
 
 func main() {
 	validateFlags()
@@ -66,6 +73,7 @@ func downloadLogs() {
 // saveLogs downloads logs for the period [s, e) and saves
 // saves them to a file.
 func saveLogs(s, e time.Time) {
+
 	log.Printf("Downloading logs from %v to %v", s, e)
 	u := fmt.Sprintf("%s?start=%d&end=%d", *baseURL, s.Unix(), e.Unix())
 	req, err := http.NewRequest("GET", u, nil)
@@ -95,7 +103,28 @@ func saveLogs(s, e time.Time) {
 	defer f.Close()
 
 	io.Copy(f, resp.Body)
-    // saves the checkpoint file after the file is successfully downloaded
+
+	// write metadata about download for debug purposes
+	var md metadata
+	md.TimeRange = fmt.Sprintf("%v to %v", s, e)
+	md.DownloadURL = u
+	md.Headers = resp.Header
+
+	jsonMetadata, err := json.Marshal(md)
+	if err != nil {
+		log.Fatalf("Failed to marshal JSON metadata: %v", err)
+	}
+
+	mdFname := fmt.Sprintf("%s.json", fname)
+	g, err := os.Create(mdFname)
+	if err != nil {
+		log.Fatalf("Failed to create metadata log file (%s): %v", mdFname, err)
+	}
+
+	defer g.Close()
+	g.WriteString(string(jsonMetadata))
+
+	// saves the checkpoint file after the file is successfully downloaded
 	saveCheckpoint(e)
 }
 
