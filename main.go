@@ -73,7 +73,6 @@ func downloadLogs() {
 // saveLogs downloads logs for the period [s, e) and saves
 // saves them to a file.
 func saveLogs(s, e time.Time) {
-
 	log.Printf("Downloading logs from %v to %v", s, e)
 	u := fmt.Sprintf("%s?start=%d&end=%d", *baseURL, s.Unix(), e.Unix())
 	req, err := http.NewRequest("GET", u, nil)
@@ -104,6 +103,9 @@ func saveLogs(s, e time.Time) {
 
 	io.Copy(f, resp.Body)
 
+	// saves the checkpoint file after the file is successfully downloaded
+	saveCheckpoint(e)
+
 	// write metadata about download for debug purposes
 	var md metadata
 	md.TimeRange = fmt.Sprintf("%v to %v", s, e)
@@ -123,9 +125,6 @@ func saveLogs(s, e time.Time) {
 
 	defer g.Close()
 	g.WriteString(string(jsonMetadata))
-
-	// saves the checkpoint file after the file is successfully downloaded
-	saveCheckpoint(e)
 }
 
 // saveCheckpoint saves the last downloaded state in a file
