@@ -4,16 +4,19 @@ Logsclient is a tool for downloading log files from CloudFlare's Enterprise Log 
 
 ## Usage
 
--auth.email="": authorization email
-
--auth.key="": authorization key
-
--dir="/var/folders/j5/y4pm_7yj1qd1_7dh2kxdf5fm0000gn/T/": directory to download logs into
-
--end=1448147588: the unix epoch timestamp to end downloading at
-
--max=72h0m0s: the maximum time in the past the start can be
-
--start=-1: the unix epoch timestamp to start downloading from
-
--url="https://api.cloudflare.com/client/v4/logs": URL for CloudFlare logs API
+  -auth.email string
+        authorization email
+  -auth.key string
+        authorization key
+  -dir string
+        directory to download logs 
+  -end int
+        the unix epoch timestamp to end downloading at (defaults to time the program is run )
+  -interval duration
+        the time interval to save files in (default 1m0s)
+  -max duration
+        the maximum time in the past the start can be (default 72h0m0s)
+  -start int
+        the unix epoch timestamp to start downloading from (default -1 and looks for the checkpoint file in the download directory)
+  -url string
+        URL for CloudFlare logs API - https://api.cloudflare.com/client/v4/zones/<zone tag>/logs/requests
