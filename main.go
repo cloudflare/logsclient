@@ -94,14 +94,22 @@ func saveLogs(s, e time.Time) {
 		log.Fatalf("Received non-2xx status code: %d", resp.StatusCode)
 	}
 
-	fname := filepath.Join(*dir, s.Format(fileTimeLayout))
-	f, err := os.Create(fname)
+	// write log file out to a temp file first, then copy it into place with a single atomic operation
+	tmp, err := ioutil.TempFile("", fmt.Sprintf("cloudflare-logs-%d-%d", s.Unix(), e.Unix()))
 	if err != nil {
+		log.Fatalf("Failed to temp file: %v", err)
+	}
+	defer func() {
+		tmp.Close()
+		os.Remove(tmp.Name())
+	}()
+
+	io.Copy(tmp, resp.Body)
+
+	fname := filepath.Join(*dir, s.Format(fileTimeLayout))
+	if err := os.Rename(tmp.Name(), fname); err != nil {
 		log.Fatalf("Failed to create log file (%s): %v", fname, err)
 	}
-	defer f.Close()
-
-	io.Copy(f, resp.Body)
 
 	// saves the checkpoint file after the file is successfully downloaded
 	saveCheckpoint(e)
